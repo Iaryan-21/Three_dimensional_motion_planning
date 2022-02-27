@@ -2,81 +2,76 @@
 ![Quad Image](./misc/enroute.png)
 
 ---
+## Prerequisites
 
+For running the project, one needs:-
 
-# Required Steps for a Passing Submission:
-1. Load the 2.5D map in the colliders.csv file describing the environment.
-2. Discretize the environment into a grid or graph representation.
-3. Define the start and goal locations.
-4. Perform a search using A* or other search algorithm.
-5. Use a collinearity test or ray tracing method (like Bresenham) to remove unnecessary waypoints.
-6. Return waypoints in local ECEF coordinates (format for `self.all_waypoints` is [N, E, altitude, heading], where the drone’s start location corresponds to [0, 0, 0, 0].
-7. Write it up.
-8. Congratulations!  Your Done!
+Miniconda with Python 3.6. (dependning on the OS one can download and install)
 
-## [Rubric](https://review.udacity.com/#!/rubrics/1534/view) Points
-### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
-
----
-### Writeup / README
-
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  
-
-You're reading it! Below I describe how I addressed each rubric point and where in my code each point is handled.
-
-### Explain the Starter Code
-
-#### 1. Explain the functionality of what's provided in `motion_planning.py` and `planning_utils.py`
-These scripts contain a basic planning implementation that includes...
-
-And here's a lovely image of my results (ok this image has nothing to do with it, but it's a nice example of how to include images in your writeup!)
-![Top Down View](./misc/high_up.png)
-
-Here's | A | Snappy | Table
---- | --- | --- | ---
-1 | `highlight` | **bold** | 7.41
-2 | a | b | c
-3 | *italic* | text | 403
-4 | 2 | 3 | abcd
-
-### Implementing Your Path Planning Algorithm
-
-#### 1. Set your global home position
-Here students should read the first line of the csv file, extract lat0 and lon0 as floating point values and use the self.set_home_position() method to set global home. Explain briefly how you accomplished this in your code.
-
-
-And here is a lovely picture of our downtown San Francisco environment from above!
-![Map of SF](./misc/map.png)
-
-#### 2. Set your current local position
-Here as long as you successfully determine your local position relative to global home you'll be all set. Explain briefly how you accomplished this in your code.
-
-
-Meanwhile, here's a picture of me flying through the trees!
-![Forest Flying](./misc/in_the_trees.png)
-
-#### 3. Set grid start position from local position
-This is another step in adding flexibility to the start location. As long as it works you're good to go!
-
-#### 4. Set grid goal position from geodetic coords
-This step is to add flexibility to the desired goal location. Should be able to choose any (lat, lon) within the map and have it rendered to a goal location on the grid.
-
-#### 5. Modify A* to include diagonal motion (or replace A* altogether)
-Minimal requirement here is to modify the code in planning_utils() to update the A* implementation to include diagonal motions on the grid that have a cost of sqrt(2), but more creative solutions are welcome. Explain the code you used to accomplish this step.
-
-#### 6. Cull waypoints 
-For this step you can use a collinearity test or ray tracing method like Bresenham. The idea is simply to prune your path of unnecessary waypoints. Explain the code you used to accomplish this step.
+## Project Description
 
 
 
-### Execute the flight
-#### 1. Does it work?
-It works!
+motion_planning_from_seed_project.py: This is the based implementation for this project provided by Udacity on its seed project.
+planning_utils_from_seed_project.py: It was also provided by Udacity on the its seed project. It contains an implementation of the A* search algorithm in addition to utility functions.
+motion_planning.py: This version extends the provided implementation with the following features:
+The global home location is read from the colliders.csv file.
+The goal location is set from command line arguments (--goal_lat, --goal_lon, --goal_alt).
+The calculated path is pruned with a collinearity function to eliminate unnecessary waypoints.
+planning_utils.py: This file is used by motion_planning.py instead of the seed version. It provides support for the features mention above and also extends the A* search algorithm to include diagonals actions.
 
-### Double check that you've met specifications for each of the [rubric](https://review.udacity.com/#!/rubrics/1534/view) points.
-  
-# Extra Challenges: Real World Planning
 
-For an extra challenge, consider implementing some of the techniques described in the "Real World Planning" lesson. You could try implementing a vehicle model to take dynamic constraints into account, or implement a replanning method to invoke if you get off course or encounter unexpected obstacles.
+## Project Rubric
+
+Explain the Starter Code
+
+Both version are similar in the sense they implement a finite-state machine to command the drone. They are similar but not exactly the same. On the backyard_flyer_solution.py the states and transitions represented are:
+
+![image](https://user-images.githubusercontent.com/86413005/155874363-3691e45c-5a70-41dc-933e-a89fc2c78745.png)
+
+
+The state machine implemented on motion_planning.py, adds another state to the previous one:
+
+![image](https://user-images.githubusercontent.com/86413005/155874375-225d4569-45f7-43b1-a25c-9b20205d1473.png)
+
+## Implementation of the code:
+
+here is a new state, PLANNING, between ARMING and TAKEOFF. When the drone is at the state ARMING and it is actually armed (line 66) on the state_callback method (lines 61 to 72), the transition to PLANNING is executed on the method plan_path. This method responsibility is to calculate the waypoints necessary for the drone to arrive at its destination.
+
+On the plan_path method:
+
+The map is loaded 
+The grid is calculated  using the method create_grid from the module planning_utils.py.
+The goal grid is set 10 north and east from local position 
+To find the path to the goal, A* search algorithm is executed 1 using the a_star method from the module planning_utils.py.
+The waypoints are generated  and sent to the simulator using the method send_waypoints .
+
+## Implementation of Planning Algorithm
+
+
+### In the starter code, we assume that the home position is where the drone first initializes, but in reality, you need to be able to start planning from anywhere. Modify your code to read the global home location from the first line of the colliders.csv. file and set that position as global home (self.set_home_position())
+
+The home position is read at motion_planning.py. It use the function read_home added to planning_utils.py.
+
+### In the starter code, we assume the drone takes off from map center, but you'll need to be able to takeoff from anywhere. Retrieve your current position in geodetic coordinates from self._latitude(), self._longitude() and self._altitude(). Then use the utility function global_to_local() to convert to local position (using self.global_home() as well, which you just set)
+
+Post that coordinate transformation is done.
+
+### In the starter code, the start point for planning is hardcoded as map center. Change this to be your current local position.
+
+Grid point is then calculated.
+
+### In the starter code, the goal position is hardcoded as some location 10 m north and 10 m east of map center. Modify this to be set as some arbitrary position on the grid given any geodetic coordinates (latitude, longitude)
+
+Addition of parameters in motion_planning.py were done to be accept the goals coordinates. The coordinates are converted to local coordinates which are used in search agorithm
+
+### Write your search algorithm. Minimum requirement here is to add diagonal motions to the A* implementation provided, and assign them a cost of sqrt(2). However, you're encouraged to get creative and try other methods from the lessons and beyond!
+
+The diagonals movements were implemented by adding them to the Action enum. The valid_actions method was modified to take those actions into account.
+
+### Cull waypoints from the path you determine using search.
+The path was pruned using collinearity with the methods being explained in the course
+
+
 
 
